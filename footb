@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Причастный Удар — Футбол по-русски</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  html, body {
+    height: 100%;
+    font-family: 'Space Mono', monospace;
+    background: radial-gradient(ellipse at top, #b3e0ff 0%, #7ec8e3 40%, #4a90c2 100%);
+    color: #0a2540;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.6) 2px, transparent 3px),
+      radial-gradient(circle at 70% 60%, rgba(192,192,192,0.5) 2px, transparent 3px),
+      radial-gradient(circle at 40% 80%, rgba(255,255,255,0.4) 1px, transparent 2px);
+    background-size: 200px 200px;
+    pointer-events: none;
+    animation: sparkle 8s linear infinite;
+  }
+  @keyframes sparkle {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-200px); }
+  }
+  #app {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .screen {
+    display: none;
+    width: 100%;
+    max-width: 900px;
+    background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(220,240,255,0.9));
+    border: 4px solid #c0c0c0;
+    border-radius: 24px;
+    padding: 30px;
+    box-shadow: 0 10px 40px rgba(10,37,64,0.3), inset 0 0 30px rgba(179,224,255,0.5);
+    position: relative;
+    animation: popIn 0.5s ease;
+  }
+  .screen.active { display: block; }
+  @keyframes popIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  h1, h2, h3 {
+    font-family: 'Press Start 2P', cursive;
+    color: #0a2540;
+    text-shadow: 2px 2px 0 #c0c0c0, 4px 4px 0 rgba(10,37,64,0.2);
+    line-height: 1.4;
+  }
+  h1 { font-size: 28px; text-align: center; margin-bottom: 20px; }
+  h2 { font-size: 20px; margin-bottom: 15px; }
+  h3 { font-size: 14px; margin-bottom: 10px; }
+  p { font-size: 15px; line-height: 1.6; margin-bottom: 12px; }
+  .btn {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 12px;
+    padding: 14px 22px;
+    background: linear-gradient(145deg, #ffffff, #c0c0c0);
+    color: #0a2540;
+    border: 3px solid #0a2540;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 0 #0a2540;
+    text-transform: uppercase;
+  }
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #0a2540;
+    background: linear-gradient(145deg, #e6f3ff, #a8d5f0);
+  }
+  .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #0a2540; }
+  .btn.primary { background: linear-gradient(145deg, #7ec8e3, #4a90c2); color: white; }
+  .btn.small { font-size: 10px; padding: 10px 14px; }
+
+  /* Title */
+  .title-logo {
+    font-size: 48px;
+    text-align: center;
+    margin: 20px 0;
+    animation: bounce 2s infinite;
+  }
+  @keyframes bounce {
+    0%,100% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(-15px) rotate(360deg); }
+  }
+  .subtitle {
+    text-align: center;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 11px;
+    color: #4a90c2;
+    margin: 15px 0;
+  }
+
+  /* Map */
+  .map-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .map-node {
+    aspect-ratio: 1;
+    background: linear-gradient(145deg, #ffffff, #c0c0c0);
+    border: 3px solid #0a2540;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 10px;
+    text-align: center;
+    padding: 6px;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .map-node.locked { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.8); }
+  .map-node.completed {
+    background: linear-gradient(145deg, #a8e6a8, #5cb85c);
+    color: #0a2540;
+  }
+  .map-node.current {
+    background: linear-gradient(145deg, #7ec8e3, #4a90c2);
+    color: white;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { transform: scale(1); box-shadow: 0 0 0 rgba(126,200,227,0.5); }
+    50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(126,200,227,0.8); }
+  }
+  .map-node .emoji { font-size: 24px; margin-bottom: 4px; }
+  .map-node .num { font-size: 8px; opacity: 0.7; }
+
+  /* Task */
+  .task-box {
+    background: linear-gradient(145deg, #e6f3ff, #b3e0ff);
+    border: 3px dashed #4a90c2;
+    border-radius: 16px;
+    padding: 20px;
+    margin: 15px 0;
+    min-height: 120px;
+  }
+  .task-question {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 15px;
+  }
+  .task-sentence {
+    font-size: 18px;
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid #c0c0c0;
+    margin: 10px 0;
+    line-height: 1.8;
+  }
+  .options { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; }
+  .option {
+    flex: 1 1 calc(50% - 10px);
+    min-width: 140px;
+    padding: 14px;
+    background: white;
+    border: 3px solid #0a2540;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .option:hover { background: #e6f3ff; transform: translateY(-2px); }
+  .option.correct { background: #a8e6a8; border-color: #2d7a2d; animation: correctFlash 0.5s; }
+  .option.wrong { background: #ffb3b3; border-color: #a33; animation: shake 0.4s; }
+  @keyframes correctFlash {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+
+  /* Input */
+  .task-input {
+    width: 100%;
+    padding: 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 16px;
+    border: 3px solid #0a2540;
+    border-radius: 12px;
+    background: white;
+    margin: 10px 0;
+  }
+  .task-input:focus { outline: none; border-color: #4a90c2; box-shadow: 0 0 10px rgba(74,144,194,0.5); }
+
+  /* Letter click */
+  .letters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin: 15px 0;
+  }
+  .letter {
+    width: 44px; height: 44px;
+    background: linear-gradient(145deg, #ffffff, #c0c0c0);
+    border: 2px solid #0a2540;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .letter:hover { transform: translateY(-3px); background: #e6f3ff; }
+  .letter.used { opacity: 0.3; cursor: not-allowed; }
+  .answer-slots {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin: 15px 0;
+    min-height: 50px;
+    flex-wrap: wrap;
+  }
+  .slot {
+    width: 40px; height: 46px;
+    background: white;
+    border: 2px dashed #4a90c2;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .slot.filled { background: #e6f3ff; border-style: solid; }
+
+  /* Drag and drop */
+  .dnd-zone {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 10px 0;
+    min-height: 60px;
+    padding: 10px;
+    background: rgba(255,255,255,0.5);
+    border: 2px dashed #4a90c2;
+    border-radius: 10px;
+  }
+  .dnd-item {
+    padding: 10px 14px;
+    background: linear-gradient(145deg, #ffffff, #c0c0c0);
+    border: 2px solid #0a2540;
+    border-radius: 10px;
+    cursor: grab;
+    font-weight: bold;
+    transition: all 0.2s;
+  }
+  .dnd-item:active { cursor: grabbing; transform: scale(1.05); }
+  .dnd-item.placed { background: #a8e6a8; }
+  .drop-target {
+    min-height: 50px;
+    padding: 10px;
+    background: rgba(255,255,255,0.7);
+    border: 3px dashed #0a2540;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 10px 0;
+    font-style: italic;
+    color: #4a90c2;
+  }
+  .drop-target.over { background: #e6f3ff; }
+
+  /* Progress */
+  .progress-bar {
+    width: 100%;
+    height: 20px;
+    background: white;
+    border: 3px solid #0a2540;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 15px 0;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #7ec8e3, #4a90c2);
+    width: 0%;
+    transition: width 0.5s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 9px;
+  }
+
+  /* HUD */
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(10,37,64,0.9);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 10px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .hud-item { display: flex; align-items: center; gap: 6px; }
+
+  /* Reward */
+  .reward-box {
+    text-align: center;
+    padding: 30px;
+  }
+  .trophy {
+    font-size: 100px;
+    animation: trophySpin 2s ease;
+    display: inline-block;
+  }
+  @keyframes trophySpin {
+    0% { transform: scale(0) rotate(-180deg); }
+    50% { transform: scale(1.3) rotate(180deg); }
+    100% { transform: scale(1) rotate(360deg); }
+  }
+  .confetti {
+    position: fixed;
+    width: 10px; height: 10px;
+    pointer-events: none;
+    animation: fall 3s linear forwards;
+  }
+  @keyframes fall {
+    to { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* Inventory */
+  .inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin: 15px 0;
+  }
+  .inv-item {
+    background: linear-gradient(145deg, #ffffff, #c0c0c0);
+    border: 3px solid #0a2540;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    font-size: 11px;
+  }
+  .inv-item .icon { font-size: 40px; margin-bottom: 6px; }
+
+  /* Final */
+  .final-box { text-align: center; padding: 20px; }
+  .final-cup { font-size: 140px; animation: trophySpin 2s ease; display: inline-block; }
+
+  /* Feedback */
+  .feedback {
+    padding: 12px;
+    border-radius: 10px;
+    margin: 10px 0;
+    font-weight: bold;
+    text-align: center;
+    display: none;
+    animation: popIn 0.3s;
+  }
+  .feedback.show { display: block; }
+  .feedback.success { background: #a8e6a8; color: #2d7a2d; border: 2px solid #2d7a2d; }
+  .feedback.error { background: #ffb3b3; color: #a33; border: 2px solid #a33; }
+
+  /* Field decoration */
+  .field {
+    position: absolute;
+    bottom: -20px;
+    right: -20px;
+    width: 120px;
+    height: 120px;
+    opacity: 0.15;
+    font-size: 100px;
+    pointer-events: none;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    h1 { font-size: 18px; }
+    h2 { font-size: 14px; }
+    .map-grid { grid-template-columns: repeat(3, 1fr); }
+    .btn { font-size: 10px; padding: 10px 14px; }
+    .screen { padding: 18px; }
+    .title-logo { font-size: 36px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ТИТУЛЬНЫЙ ЭКРАН -->
+  <div class="screen active" id="screen-title">
+    <div class="title-logo">⚽</div>
+    <h1>ПРИЧАСТНЫЙ УДАР</h1>
+    <p class="subtitle">★ Футбол по-русски ★ 7 класс ★</p>
+    <p style="text-align:center; margin: 20px 0;">
+      Сказочная футбольная команда «Серебряные Причастия» отправляется в путешествие по 10 волшебным стадионам!
+      Помоги капитану забить голы, отвечая на вопросы о причастиях.
+    </p>
+    <div style="text-align:center; margin: 25px 0;">
+      <button class="btn primary" onclick="showScreen('intro')">▶ НАЧАТЬ МАТЧ</button>
+    </div>
+    <div style="text-align:center;">
+      <button class="btn small" onclick="showScreen('inventory')">🎒 ИНВЕНТАРЬ</button>
+    </div>
+    <div class="field">⚽</div>
+  </div>
+
+  <!-- ИНТРО -->
+  <div class="screen" id="screen-intro">
+    <h2>📜 ЛЕГЕНДА</h2>
+    <div class="task-box">
+      <p>В далёкой-далёкой Глаголии, где слова живут по особым законам, появилась загадочная сборная — <b>«Серебряные Причастия»</b>.</p>
+      <p>Их капитан — <b>Причастие</b> — необычный игрок: он и на <b>глагол</b> похож (действие выполняет!), и на <b>прилагательное</b> (признак предмета называет!).</p>
+      <p>Чтобы стать чемпионом Сказочной Лиги, команде нужно пройти <b>10 стадионов</b> и на каждом забить гол — ответив на вопрос о причастиях.</p>
+      <p>Ты — тренер. Готов вести команду к кубку? 🏆</p>
+    </div>
+    <div style="text-align:center; margin-top:20px;">
+      <button class="btn primary" onclick="showScreen('map')">🗺️ К КАРТЕ СТАДИОНОВ</button>
+    </div>
+  </div>
+
+  <!-- КАРТА -->
+  <div class="screen" id="screen-map">
+    <h2>🗺️ КАРТА СТАДИОНОВ</h2>
+    <div class="hud">
+      <div class="hud-item">🏆 ГОЛЫ: <span id="hud-goals">0</span>/10</div>
+      <div class="hud-item">⭐ ОЧКИ: <span id="hud-points">0</span></div>
+      <div class="hud-item">🎯 УРОВЕНЬ: <span id="hud-level">1</span>/10</div>
+    </div>
+    <div class="map-grid" id="map-grid"></div>
+    <div style="text-align:center; margin-top:15px;">
+      <button class="btn small" onclick="showScreen('title')">🏠 В МЕНЮ</button>
+      <button class="btn small" onclick="showScreen('inventory')">🎒 ИНВЕНТАРЬ</button>
+    </div>
+  </div>
+
+  <!-- ЗАДАНИЕ -->
+  <div class="screen" id="screen-task">
+    <div class="hud">
+      <div class="hud-item">🏟️ СТАДИОН <span id="task-level">1</span>/10</div>
+      <div class="hud-item">🏆 ГОЛЫ: <span id="task-goals">0</span></div>
+      <div class="hud-item">⭐ <span id="task-points">0</span></div>
+    </div>
+    <h2 id="task-title">ЗАДАНИЕ</h2>
+    <div class="progress-bar">
+      <div class="progress-fill" id="task-progress">0%</div>
+    </div>
+    <div class="task-box" id="task-content"></div>
+    <div class="feedback" id="feedback"></div>
+    <div id="task-actions" style="text-align:center; margin-top:15px;"></div>
+  </div>
+
+  <!-- НАГРАДА -->
+  <div class="screen" id="screen-reward">
+    <div class="reward-box">
+      <div class="trophy" id="reward-icon">🏅</div>
+      <h2 id="reward-title">ГОЛ!</h2>
+      <p id="reward-text">Отличный удар!</p>
+      <p style="font-size:18px; margin: 15px 0;"><b>+<span id="reward-points">10</span> очков</b></p>
+      <button class="btn primary" onclick="showScreen('map')">🗺️ К КАРТЕ</button>
+    </div>
+  </div>
+
+  <!-- ФИНАЛ -->
+  <div class="screen" id="screen-final">
+    <div class="final-box">
+      <div class="final-cup">🏆</div>
+      <h1>ЧЕМПИОН!</h1>
+      <p class="subtitle">★ СЕРЕБРЯНАЯ ЛИГА ПОКОРЕНА ★</p>
+      <p style="margin: 20px 0;">Команда «Серебряные Причастия» стала чемпионом Сказочной Лиги!</p>
+      <p>Итоговый счёт: <b><span id="final-points">0</span> очков</b></p>
+      <p>Забито голов: <b><span id="final-goals">0</span>/10</b></p>
+      <div style="margin: 25px 0;">
+        <button class="btn primary" onclick="restartGame()">🔄 ИГРАТЬ СНОВА</button>
+        <button class="btn small" onclick="showScreen('inventory')">🎒 ИНВЕНТАРЬ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ИНВЕНТАРЬ -->
+  <div class="screen" id="screen-inventory">
+    <h2>🎒 ИНВЕНТАРЬ КОМАНДЫ</h2>
+    <p>Здесь хранятся все награды, собранные в путешествии:</p>
+    <div class="inventory-grid" id="inventory-grid"></div>
+    <div style="text-align:center; margin-top:20px;">
+      <button class="btn primary" onclick="showScreen('map')">🗺️ К КАРТЕ</button>
+      <button class="btn small" onclick="showScreen('title')">🏠 В МЕНЮ</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============ СОСТОЯНИЕ ИГРЫ ============
+const state = {
+  currentLevel: 0,
+  goals: 0,
+  points: 0,
+  completed: [],
+  inventory: [],
+  attempts: 0
+};
+
+// ============ ЗАДАНИЯ (10 уровней — причастия, 7 класс) ============
+const tasks = [
+  {
+    stadium: "Стадион «Опознай-ка»",
+    emoji: "⚽",
+    type: "truefalse",
+    title: "ВЕРНО ИЛИ НЕВЕРНО?",
+    question: "Слово «БЕГУЩИЙ» — это причастие?",
+    sentence: "Бегущий мяч катился по полю.",
+    options: ["ВЕРНО ✓", "НЕВЕРНО ✗"],
+    correct: 0,
+    explanation: "«Бегущий» — действительное причастие настоящего времени от глагола «бежать» (суффикс -УЩ-)."
+  },
+  {
+    stadium: "Стадион «Суффикс-Арена»",
+    emoji: "🥅",
+    type: "open",
+    title: "ОТКРЫТЫЙ ОТВЕТ",
+    question: "Образуй действительное причастие настоящего времени от глагола «ЧИТАТЬ» (3 лицо мн.ч.).",
+    sentence: "Игроки, (читать) правила, вышли на поле.",
+    answer: "читающие",
+    hint: "Подсказка: суффикс -УЩ-/-ЮЩ-",
+    explanation: "«Читающий» → мн.ч. «читающие». Суффикс -ЮЩ- (после гласной)."
+  },
+  {
+    stadium: "Стадион «Временной»",
+    emoji: "⏱️",
+    type: "choice",
+    title: "ВРЕМЯ ПРИЧАСТИЯ",
+    question: "Определи время причастия «ПРОЧИТАВШИЙ»:",
+    sentence: "Прочитавший книгу игрок понял тактику.",
+    options: ["Настоящее время", "Прошедшее время"],
+    correct: 1,
+    explanation: "Суффикс -ВШ- указывает на прошедшее время. Причастие образовано от глагола прошедшего времени «прочитал»."
+  },
+  {
+    stadium: "Стадион «Букво-бол»",
+    emoji: "🎯",
+    type: "letters",
+    title: "СОБЕРИ СЛОВО",
+    question: "Собери из букв причастие, которое спряталось в слове «СМЕЯТЬСЯ» (действительное, наст. время):",
+    word: "СМЕЮЩИЙСЯ",
+    explanation: "«Смеющийся» — действительное причастие настоящего времени от «смеяться»."
+  },
+  {
+    stadium: "Стадион «Оборот-Арена»",
+    emoji: "🏟️",
+    type: "dnd",
+    title: "ПРИЧАСТНЫЙ ОБОРОТ",
+    question: "Перетащи причастный оборот в нужное место предложения:",
+    sentence: "Мяч, ___, влетел в ворота.",
+    items: ["забитый нападающим", "быстро", "в воротах"],
+    correct: "забитый нападающим",
+    explanation: "«Забитый нападающим» — причастный оборот, стоящий ПОСЛЕ определяемого слова «мяч», выделяется запятыми с обеих сторон."
+  },
+  {
+    stadium: "Стадион «Запятая-Парк»",
+    emoji: "🚧",
+    type: "truefalse",
+    title: "ВЕРНО ИЛИ НЕВЕРНО?",
+    question: "В предложении «Нападавший, тренировавшийся с утра, забил гол» причастный оборот выделяется запятыми?",
+    sentence: "Нападавший, тренировавшийся с утра, забил гол.",
+    options: ["ВЕРНО ✓", "НЕВЕРНО ✗"],
+    correct: 0,
+    explanation: "Причастный оборот СТОИТ ПОСЛЕ определяемого слова «нападавший» → выделяется запятыми с двух сторон."
+  },
+  {
+    stadium: "Стадион «Части-Речи»",
+    emoji: "🎪",
+    type: "choice",
+    title: "ЧАСТЬ РЕЧИ",
+    question: "Определи часть речи выделенного слова:",
+    sentence: "Летящий по небу мяч был серебряным.",
+    options: ["Глагол", "Прилагательное", "Причастие", "Наречие"],
+    correct: 2,
+    explanation: "«Летящий» — причастие: обозначает признак предмета (мяч) по действию (летит), имеет суффикс -ЯЩ-."
+  },
+  {
+    stadium: "Стадион «Суффикс-Мастер»",
+    emoji: "🏅",
+    type: "open",
+    title: "ОТКРЫТЫЙ ОТВЕТ",
+    question: "Напиши суффикс, который образует СТРАДАТЕЛЬНОЕ причастие ПРОШЕДШЕГО времени (пример: «прочит...ий»):",
+    sentence: "Мяч, (забить) вратарём, остался в сетке.",
+    answer: "нн",
+    hint: "Подсказка: суффикс -НН-/-ЁНН-",
+    explanation: "«Забитый» — суффикс -НН-. Он характерен для страдательных причастий прошедшего времени."
+  },
+  {
+    stadium: "Стадион «Соответствий»",
+    emoji: "🎖️",
+    type: "dnd",
+    title: "СООТНЕСИ",
+    question: "Перетащи причастие к его времени и виду:",
+    sentence: "",
+    items: ["летающий", "полетевший", "прочитанный"],
+    targets: [
+      { label: "Действ., наст. время", accept: "летающий" },
+      { label: "Действ., прош. время", accept: "полетевший" },
+      { label: "Страдат., прош. время", accept: "прочитанный" }
+    ],
+    explanation: "Летающий — действ. наст. (-УЩ-/-ЮЩ-/-АЩ-/-ЯЩ-). Полетевший — действ. прош. (-ВШ-). Прочитанный — страдат. прош. (-НН-)."
+  },
+  {
+    stadium: "Стадион «Финальный Удар»",
+    emoji: "🏆",
+    type: "letters",
+    title: "ФИНАЛЬНЫЙ УДАР!",
+    question: "Собери из букв страдательное причастие прошедшего времени от глагола «ПОБЕДИТЬ»:",
+    word: "ПОБЕЖДЁННЫЙ",
+    explanation: "«Побеждённый» — страдательное причастие прошедшего времени. Суффикс -ЁНН-, в корне чередование Д/ЖД."
+  }
+];
+
+// ============ НАВИГАЦИЯ ============
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  if (id === 'map') renderMap();
+  if (id === 'inventory') renderInventory();
+  if (id === 'task') renderTask();
+  updateHUD();
+}
+
+function updateHUD() {
+  const g = document.getElementById('hud-goals');
+  const p = document.getElementById('hud-points');
+  const l = document.getElementById('hud-level');
+  if (g) g.textContent = state.goals;
+  if (p) p.textContent = state.points;
+  if (l) l.textContent = state.currentLevel + 1;
+}
+
+// ============ КАРТА ============
+function renderMap() {
+  const grid = document.getElementById('map-grid');
+  grid.innerHTML = '';
+  tasks.forEach((t, i) => {
+    const node = document.createElement('div');
+    node.className = 'map-node';
+    const isCompleted = state.completed.includes(i);
+    const isCurrent = i === state.currentLevel;
+    const isLocked = i > state.currentLevel && !isCompleted;
+    if (isCompleted) node.classList.add('completed');
+    else if (isCurrent) node.classList.add('current');
+    else if (isLocked) node.classList.add('locked');
+    node.innerHTML = `
+      <div class="emoji">${t.emoji}</div>
+      <div class="num">#${i+1}</div>
+      <div style="font-size:8px; margin-top:4px;">${t.stadium.replace('Стадион ','').replace('«','').replace('»','')}</div>
+    `;
+    if (!isLocked) {
+      node.onclick = () => {
+        state.currentLevel = i;
+        state.attempts = 0;
+        showScreen('task');
+      };
+    }
+    grid.appendChild(node);
+  });
+}
+
+// ============ ЗАДАНИЯ ============
+function renderTask() {
+  const task = tasks[state.currentLevel];
+  document.getElementById('task-level').textContent = state.currentLevel + 1;
+  document.getElementById('task-goals').textContent = state.goals;
+  document.getElementById('task-points').textContent = state.points;
+  document.getElementById('task-title').textContent = task.title;
+  const progress = (state.currentLevel / tasks.length) * 100;
+  const pf = document.getElementById('task-progress');
+  pf.style.width = progress + '%';
+  pf.textContent = Math.round(progress) + '%';
+
+  const content = document.getElementById('task-content');
+  const actions = document.getElementById('task-actions');
+  content.innerHTML = '';
+  actions.innerHTML = '';
+  hideFeedback();
+
+  const q = document.createElement('div');
+  q.className = 'task-question';
+  q.textContent = task.question;
+  content.appendChild(q);
+
+  if (task.sentence) {
+    const s = document.createElement('div');
+    s.className = 'task-sentence';
+    s.innerHTML = task.sentence.replace('___', '<span style="color:#4a90c2; font-weight:bold;">[???]</span>');
+    content.appendChild(s);
+  }
+
+  if (task.type === 'truefalse' || task.type === 'choice') renderOptions(task, content, actions);
+  else if (task.type === 'open') renderOpen(task, content, actions);
+  else if (task.type === 'letters') renderLetters(task, content, actions);
+  else if (task.type === 'dnd') renderDnD(task, content, actions);
+}
+
+function renderOptions(task, content, actions) {
+  const opts = document.createElement('div');
+  opts.className = 'options';
+  task.options.forEach((opt, i) => {
+    const o = document.createElement('div');
+    o.className = 'option';
+    o.textContent = opt;
+    o.onclick = () => {
+      if (i === task.correct) {
+        o.classList.add('correct');
+        setTimeout(() => handleSuccess(task), 700);
+      } else {
+        o.classList.add('wrong');
+        showFeedback(false, 'Промах! Попробуй ещё раз.');
+        state.attempts++;
+      }
+    };
+    opts.appendChild(o);
+  });
+  content.appendChild(opts);
+}
+
+function renderOpen(task, content, actions) {
+  if (task.hint) {
+    const h = document.createElement('p');
+    h.style.fontSize = '12px';
+    h.style.color = '#4a90c2';
+    h.textContent = task.hint;
+    content.appendChild(h);
+  }
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.className = 'task-input';
+  inp.placeholder = 'Введи ответ...';
+  inp.id = 'open-answer';
+  content.appendChild(inp);
+  const btn = document.createElement('button');
+  btn.className = 'btn primary';
+  btn.textContent = '⚽ УДАР!';
+  btn.onclick = () => {
+    const val = inp.value.trim().toLowerCase().replace('ё','е');
+    const correct = task.answer.toLowerCase().replace('ё','е');
+    if (val === correct) {
+      handleSuccess(task);
+    } else {
+      showFeedback(false, 'Мимо ворот! Правильный ответ: ' + task.answer);
+      state.attempts++;
+    }
+  };
+  actions.appendChild(btn);
+}
+
+function renderLetters(task, content, actions) {
+  const word = task.word.toUpperCase().replace('Ё','Е');
+  const letters = word.split('');
+  const shuffled = [...letters].sort(() => Math.random() - 0.5);
+  const slots = document.createElement('div');
+  slots.className = 'answer-slots';
+  slots.id = 'letter-slots';
+  for (let i = 0; i < word.length; i++) {
+    const s = document.createElement('div');
+    s.className = 'slot';
+    s.dataset.index = i;
+    s.onclick = () => {
+      if (s.classList.contains('filled')) {
+        const letter = s.textContent;
+        s.textContent = '';
+        s.classList.remove('filled');
+        // вернуть букву
+        const allLetters = document.querySelectorAll('#letter-pool .letter');
+        for (const l of allLetters) {
+          if (l.classList.contains('used') && l.dataset.letter === letter && l.dataset.slot === s.dataset.index) {
+            l.classList.remove('used');
+            delete l.dataset.slot;
+            break;
+          }
+        }
+      }
+    };
+    slots.appendChild(s);
+  }
+  content.appendChild(slots);
+
+  const pool = document.createElement('div');
+  pool.className = 'letters';
+  pool.id = 'letter-pool';
+  shuffled.forEach((l, i) => {
+    const el = document.createElement('div');
+    el.className = 'letter';
+    el.textContent = l;
+    el.dataset.letter = l;
+    el.dataset.id = i;
+    el.onclick = () => {
+      if (el.classList.contains('used')) return;
+      // найти первую пустую слот
+      const emptySlot = document.querySelector('#letter-slots .slot:not(.filled)');
+      if (!emptySlot) return;
+      emptySlot.textContent = l;
+      emptySlot.classList.add('filled');
+      el.classList.add('used');
+      el.dataset.slot = emptySlot.dataset.index;
+      // проверка завершения
+      const filled = document.querySelectorAll('#letter-slots .slot.filled');
+      if (filled.length === word.length) {
+        const assembled = Array.from(document.querySelectorAll('#letter-slots .slot')).map(s => s.textContent).join('');
+        if (assembled === word) {
+          setTimeout(() => handleSuccess(task), 400);
+        } else {
+          showFeedback(false, 'Не то слово! Попробуй ещё.');
+          state.attempts++;
+        }
+      }
+    };
+    pool.appendChild(el);
+  });
+  content.appendChild(pool);
+}
+
+function renderDnD(task, content, actions) {
+  if (task.targets) {
+    // Соответствие
+    const targetsBox = document.createElement('div');
+    task.targets.forEach((t, i) => {
+      const row = document.createElement('div');
+      row.style.display = 'flex';
+      row.style.gap = '10px';
+      row.style.margin = '8px 0';
+      row.style.alignItems = 'center';
+      row.style.flexWrap = 'wrap';
+      const label = document.createElement('div');
+      label.style.flex = '1';
+      label.style.minWidth = '150px';
+      label.style.fontWeight = 'bold';
+      label.textContent = t.label + ':';
+      const drop = document.createElement('div');
+      drop.className = 'drop-target';
+      drop.dataset.accept = t.accept;
+      drop.dataset.idx = i;
+      drop.textContent = 'перетащи сюда';
+      drop.style.flex = '1';
+      drop.style.minWidth = '150px';
+      setupDropTarget(drop, task);
+      row.appendChild(label);
+      row.appendChild(drop);
+      targetsBox.appendChild(row);
+    });
+    content.appendChild(targetsBox);
+  } else {
+    // Одно предложение
+    const drop = document.createElement('div');
+    drop.className = 'drop-target';
+    drop.dataset.accept = task.correct;
+    drop.textContent = 'перетащи причастный оборот сюда';
+    setupDropTarget(drop, task);
+    content.appendChild(drop);
+  }
+
+  const pool = document.createElement('div');
+  pool.className = 'dnd-zone';
+  pool.id = 'dnd-pool';
+  const shuffled = [...task.items].sort(() => Math.random() - 0.5);
+  shuffled.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'dnd-item';
+    el.textContent = item;
+    el.draggable = true;
+    el.dataset.value = item;
+    el.ondragstart = (e) => {
+      e.dataTransfer.setData('text/plain', item);
+      e.dataTransfer.setData('element-id', el.dataset.uid || (el.dataset.uid = 'u' + Math.random()));
+    };
+    // Touch support
+    el.onclick = () => {
+      if (el.classList.contains('placed')) return;
+      const drops = document.querySelectorAll('.drop-target');
+      for (const d of drops) {
+        if (!d.dataset.filled) {
+          placeItem(el, d, task);
+          return;
+        }
+      }
+    };
+    pool.appendChild(el);
+  });
+  content.appendChild(pool);
+}
+
+function setupDropTarget(drop, task) {
+  drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = () => drop.classList.remove('over');
+  drop.ondrop = (e) => {
+    e.preventDefault();
+    drop.classList.remove('over');
+    const value = e.dataTransfer.getData('text/plain');
+    const elId = e.dataTransfer.getData('element-id');
+    const el = document.querySelector(`[data-uid="${elId}"]`);
+    if (el) placeItem(el, drop, task);
+  };
+}
+
+function placeItem(el, drop, task) {
+  const value = el.dataset.value;
+  const expected = drop.dataset.accept;
+  if (value === expected) {
+    drop.textContent = value;
+    drop.dataset.filled = '1';
+    drop.style.background = '#a8e6a8';
+    drop.style.borderStyle = 'solid';
+    el.classList.add('placed');
+    el.draggable = false;
+    // Проверить все ли заполнены
+    const allDrops = document.querySelectorAll('.drop-target');
+    const allFilled = Array.from(allDrops).every(d => d.dataset.filled);
+    if (allFilled) {
+      setTimeout(() => handleSuccess(task), 500);
+    }
+  } else {
+    drop.style.background = '#ffb3b3';
+    showFeedback(false, 'Неверная позиция!');
+    state.attempts++;
+    setTimeout(() => { drop.style.background = ''; }, 500);
+  }
+}
+
+// ============ УСПЕХ / НАГРАДА ============
+function handleSuccess(task) {
+  showFeedback(true, '⚽ ГОЛ! ' + (task.explanation || ''));
+  state.goals++;
+  const points = Math.max(10, 30 - state.attempts * 5);
+  state.points += points;
+  state.completed.push(state.currentLevel);
+  // Награда в инвентарь
+  const rewards = ['🥇','🥈','🥉','🏅','🎖️','🏆','⚽','👟','🧤','🎽'];
+  state.inventory.push({
+    icon: rewards[state.currentLevel] || '🏅',
+    name: task.stadium,
+    points: points
+  });
+  setTimeout(() => {
+    if (state.currentLevel === tasks.length - 1) {
+      showFinal();
+    } else {
+      showReward(points);
+      state.currentLevel++;
+    }
+  }, 1500);
+}
+
+function showReward(points) {
+  document.getElementById('reward-icon').textContent = state.inventory[state.inventory.length-1].icon;
+  document.getElementById('reward-title').textContent = 'ГОЛ ЗАБИТ!';
+  document.getElementById('reward-text').textContent = 'Ты прошёл стадион: ' + tasks[state.currentLevel-1].stadium;
+  document.getElementById('reward-points').textContent = points;
+  showScreen('reward');
+  launchConfetti();
+}
+
+function showFinal() {
+  document.getElementById('final-points').textContent = state.points;
+  document.getElementById('final-goals').textContent = state.goals;
+  showScreen('final');
+  launchConfetti();
+  launchConfetti();
+}
+
+function restartGame() {
+  state.currentLevel = 0;
+  state.goals = 0;
+  state.points = 0;
+  state.completed = [];
+  state.inventory = [];
+  state.attempts = 0;
+  showScreen('title');
+}
+
+// ============ ИНВЕНТАРЬ ============
+function renderInventory() {
+  const grid = document.getElementById('inventory-grid');
+  grid.innerHTML = '';
+  if (state.inventory.length === 0) {
+    grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#4a90c2;">Пока пусто. Забей первый гол!</p>';
+    return;
+  }
+  state.inventory.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'inv-item';
+    el.innerHTML = `<div class="icon">${item.icon}</div><div><b>${item.name}</b></div><div>+${item.points} ⭐</div>`;
+    grid.appendChild(el);
+  });
+}
+
+// ============ FEEDBACK ============
+function showFeedback(success, text) {
+  const f = document.getElementById('feedback');
+  f.className = 'feedback show ' + (success ? 'success' : 'error');
+  f.textContent = text;
+}
+function hideFeedback() {
+  const f = document.getElementById('feedback');
+  f.className = 'feedback';
+  f.textContent = '';
+}
+
+// ============ КОНФЕТТИ ============
+function launchConfetti() {
+  const colors = ['#7ec8e3','#c0c0c0','#ffffff','#4a90c2','#a8e6a8'];
+  for (let i = 0; i < 40; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.top = '-20px';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.animationDelay = Math.random() * 0.5 + 's';
+    c.style.animationDuration = (2 + Math.random() * 2) + 's';
+    if (Math.random() > 0.5) c.style.borderRadius = '50%';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 4000);
+  }
+}
+
+// Старт
+updateHUD();
+</script>
+</body>
+</html>
